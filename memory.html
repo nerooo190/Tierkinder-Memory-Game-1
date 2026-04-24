@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tierkinder Memory</title>
+    <style>
+        :root {
+            --ravens-blue: #0056b8;
+            --box-orange: #e89c45;
+            --box-yellow: #f4d06f;
+            --card-back: #0056b8;
+            --text-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at center, var(--box-yellow), var(--box-orange));
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* Background Paw Prints */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.15;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            align-content: space-around;
+            overflow: hidden;
+        }
+        .paw {
+            font-size: 3rem;
+            transform: rotate(20deg);
+            margin: 20px;
+            color: #8b4513;
+        }
+
+        /* Ravensburger Corner Triangle */
+        .corner-triangle {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 0 120px 120px;
+            border-color: transparent transparent var(--ravens-blue) transparent;
+            z-index: 100;
+        }
+        .corner-text {
+            position: fixed;
+            bottom: 15px;
+            right: 5px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            transform: rotate(-45deg);
+            z-index: 101;
+        }
+
+        /* Header / Logo Area */
+        header {
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .silhouettes {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: -10px;
+        }
+        
+        .silhouette-animal {
+            font-size: 3rem;
+            /* Filter to make emojis look like blue silhouettes */
+            filter: brightness(0) saturate(100%) invert(18%) sepia(96%) saturate(3665%) hue-rotate(209deg) brightness(93%) contrast(101%);
+            opacity: 0.9;
+        }
+
+        h2 {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            color: #6a4c93; /* Purple tone from box */
+            margin: 0;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 0 #fff;
+        }
+
+        h1 {
+            font-family: 'Times New Roman', serif;
+            font-size: 4rem;
+            color: white;
+            margin: 0;
+            text-shadow: 0px 4px 6px rgba(0,0,0,0.3);
+            font-weight: bold;
+            letter-spacing: -2px;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.3);
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .stat {
+            font-weight: bold;
+            color: #444;
+            font-size: 1.1rem;
+        }
+
+        button.reset-btn {
+            background: var(--ravens-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.1s;
+        }
+        button.reset-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Game Grid */
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            max-width: 600px;
+            padding: 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        /* Card Styles */
+        .card {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: scale(1);
+            transition: transform 0.5s;
+            cursor: pointer;
+        }
+
+        .card:active {
+            transform: scale(0.97);
+        }
+
+        .card.flip {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            backface-visibility: hidden;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            border: 4px solid white;
+        }
+
+        .card-front {
+            background: var(--ravens-blue);
+            background-image: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255,255,255,0.1) 10px,
+                rgba(255,255,255,0.1) 20px
+            );
+            /* Ravensburger logo hint */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .card-front::after {
+            content: '';
+            width: 0; 
+            height: 0; 
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 15px solid white;
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            opacity: 0.5;
+        }
+
+        .card-back {
+            background: white;
+            transform: rotateY(180deg);
+            background: radial-gradient(circle, #fff, #f0f0f0);
+        }
+
+        /* Win Modal */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            border: 8px solid var(--box-orange);
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.5);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn {
+            from { transform: scale(0.5); }
+            to { transform: scale(1); }
+        }
+        .modal h2 {
+            color: var(--ravens-blue);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .stars {
+            font-size: 3rem;
+            margin: 20px 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 500px) {
+            .game-board {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
+            }
+            .card {
+                width: 65px;
+                height: 65px;
+            }
+            h1 { font-size: 3rem; }
+            .silhouette-animal { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Decorative Background -->
+    <div class="bg-pattern" id="bgPattern">
+        <!-- JS will populate paws -->
+    </div>
+
+    <!-- Ravensburger Branding Corner -->
+    <div class="corner-triangle"></div>
+    <div class="corner-text">RavenAI</div>
+
+    <header>
+        <div class="silhouettes">
+            <div class="silhouette-animal">🐘</div>
+            <div class="silhouette-animal">🐻</div>
+            <div class="silhouette-animal">🦆</div>
+            <div class="silhouette-animal">🐴</div>
+        </div>
+        <h2>Tierkinder</h2>
+        <h1>memory</h1>
+    </header>
+
+    <div class="controls">
+        <div class="stat">Moves: <span id="moveCount">0</span></div>
+        <div class="stat">Pairs: <span id="pairCount">0</span>/8</div>
+        <button class="reset-btn" onclick="initGame()">Restart</button>
+    </div>
+
+    <div class="game-board" id="gameBoard">
+        <!-- Cards generated by JS -->
+    </div>
+
+    <div class="modal" id="winModal">
+        <div class="modal-content">
+            <h2>Fantastisch!</h2>
+            <p>You found all the baby animals!</p>
+            <div class="stars">🦁 ⭐ 🐯</div>
+            <p>Moves: <span id="finalMoves">0</span></p>
+            <button class="reset-btn" onclick="closeModal()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const animals = ['🦁', '🐘', '🐶', '🐱', '🦊', '🐻', '🐼', '🐨'];
+        let cards = [];
+        let hasFlippedCard = false;
+        let lockBoard = false;
+        let firstCard, secondCard;
+        let moves = 0;
+        let pairsFound = 0;
+
+        // DOM Elements
+        const gameBoard = document.getElementById('gameBoard');
+        const moveDisplay = document.getElementById('moveCount');
+        const pairDisplay = document.getElementById('pairCount');
+        const winModal = document.getElementById('winModal');
+        const finalMoves = document.getElementById('finalMoves');
+        const bgPattern = document.getElementById('bgPattern');
+
+        // Initialize Background Paws
+        function initBackground() {
+            for(let i=0; i<20; i++) {
+                const paw = document.createElement('div');
+                paw.classList.add('paw');
+                paw.textContent = '🐾';
+                paw.style.transform = `rotate(${Math.random() * 360}deg)`;
+                paw.style.opacity = Math.random() * 0.2;
+                bgPattern.appendChild(paw);
+            }
+        }
+
+        // Initialize Game
+        function initGame() {
+            // Reset state
+            cards = [...animals, ...animals]; // Duplicate for pairs
+            hasFlippedCard = false;
+            lockBoard = false;
+            firstCard = null;
+            secondCard = null;
+            moves = 0;
+            pairsFound = 0;
+            
+            // Update UI
+            moveDisplay.textContent = moves;
+            pairDisplay.textContent = pairsFound;
+            winModal.classList.remove('show');
+            gameBoard.innerHTML = '';
+
+            // Shuffle
+            cards.sort(() => 0.5 - Math.random());
+
+            // Build Board
+            cards.forEach(animal => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.animal = animal;
+
+                const frontFace = document.createElement('div');
+                frontFace.classList.add('card-face', 'card-front');
+
+                const backFace = document.createElement('div');
+                backFace.classList.add('card-face', 'card-back');
+                backFace.textContent = animal;
+
+                card.appendChild(frontFace);
+                card.appendChild(backFace);
+                
+                card.addEventListener('click', flipCard);
+                gameBoard.appendChild(card);
+            });
+        }
+
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return;
+
+            this.classList.add('flip');
+
+            if (!hasFlippedCard) {
+                // First click
+                hasFlippedCard = true;
+                firstCard = this;
+                return;
+            }
+
+            // Second click
+            secondCard = this;
+            incrementMoves();
+            checkForMatch();
+        }
+
+        function incrementMoves() {
+            moves++;
+            moveDisplay.textContent = moves;
+        }
+
+        function checkForMatch() {
+            let isMatch = firstCard.dataset.animal === secondCard.dataset.animal;
+
+            if (isMatch) {
+                disableCards();
+                pairsFound++;
+                pairDisplay.textContent = pairsFound;
+                if (pairsFound === animals.length) {
+                    setTimeout(showWin, 500);
+                }
+            } else {
+                unflipCards();
+            }
+        }
+
+        function disableCards() {
+            firstCard.removeEventListener('click', flipCard);
+            secondCard.removeEventListener('click', flipCard);
+            resetBoard();
+        }
+
+        function unflipCards() {
+            lockBoard = true;
+            setTimeout(() => {
+                firstCard.classList.remove('flip');
+                secondCard.classList.remove('flip');
+                resetBoard();
+            }, 1000);
+        }
+
+        function resetBoard() {
+            [hasFlippedCard, lockBoard] = [false, false];
+            [firstCard, secondCard] = [null, null];
+        }
+
+        function showWin() {
+            finalMoves.textContent = moves;
+            winModal.classList.add('show');
+            confettiEffect();
+        }
+
+        function closeModal() {
+            winModal.classList.remove('show');
+            initGame();
+        }
+
+        // Simple Confetti Effect
+        function confettiEffect() {
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'];
+            for(let i=0; i<50; i++) {
+                const conf = document.createElement('div');
+                conf.style.position = 'fixed';
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.top = '-10px';
+                conf.style.width = '10px';
+                conf.style.height = '10px';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.zIndex = '2000';
+                conf.style.transition = 'top 2s ease-in, transform 2s linear';
+                document.body.appendChild(conf);
+
+                setTimeout(() => {
+                    conf.style.top = '110vh';
+                    conf.style.transform = `rotate(${Math.random() * 360}deg)`;
+                }, 10);
+
+                setTimeout(() => {
+                    conf.remove();
+                }, 2100);
+            }
+        }
+
+        // Start
+        initBackground();
+        initGame();
+
+    </script>
+</body>
+</html>
